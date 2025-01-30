@@ -1,18 +1,15 @@
 import commands2
-import commands2.button
-import commands2.cmd
 import ntcore
 import wpilib
-
+from auton.DriveCommand import DriveForTime
+from auton.MingusCommand import RunMingusqxForTime
 from subsystems.command_MecanumDrive import MecanumDrive
 from subsystems.command_Mingusqx import Mingusqx
 from subsystems.vision import Vision
-from utils.math import linear_remap
 
 
 class RobotContainer:
     def __init__(self) -> None:
-
         self.front_left = wpilib.Spark(3)
         self.rear_left = wpilib.Spark(2)
         self.front_right = wpilib.Spark(1)
@@ -31,16 +28,14 @@ class RobotContainer:
         self.limelight = self.network_tables.getTable("limelight")
 
         self.joystick = commands2.button.CommandJoystick(0)
-        self.controller = commands2.button.CommandXboxController(1)
 
         self.configureButtonBindings()
 
     def vision(self):
         vision = Vision(self.robot_drive)
-        a = self.controller.a()._condition()
+        a = self.joystick.button(3).getAsBoolean()
         tx = self.limelight.getNumber("tx", 1)
-        
-        
+        kP = 0.5
         z = (
             self.joystick.getZ() / 2
             if not a
@@ -57,7 +52,10 @@ class RobotContainer:
             self.robot_drive.apply_request(lambda: self.vision())
         )
 
-        self.controller.b().whileTrue(self.minugusqx.mingussy(85))
+        self.joystick.button(0).whileTrue(self.minugusqx.mingussy(85))
 
     def getAutonomousCommand(self) -> commands2.Command:
-        return commands2.cmd.print_("No autonomous command configured")
+        return commands2.SequentialCommandGroup(
+            DriveForTime(self.robot_drive, 40, 0, 0, 5),
+            RunMingusqxForTime(self.minugusqx, 80, 3)
+        )
