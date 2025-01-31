@@ -8,20 +8,24 @@ class AlignToAprilTag(commands2.Command):
         super().__init__()
         self.drive = drive
         self.limelight = limelight
-        self.kP = 0.5  
+        self.kP = 0.25
         self.addRequirements(drive)
     
     def initialize(self):
         pass
     
     def execute(self):
-        tx = self.limelight.getNumber("tx", 0.0)  
-        x_correction = -self.kP * tx  
-        self.drive.drive(x_correction, 0, 0)  
+        target_valid = self.limelight.getNumber("tv", 0)  # 1 if target is found, 0 if not
+        if target_valid:
+            tx = self.limelight.getNumber("tx", 0.0)  
+            x_correction = -self.kP * tx  
+            self.drive.drive(-x_correction, 0, 0)  
+        else:
+            self.drive.drive(0, 0, 0)  # Stop if no valid target
     
     def isFinished(self):
-        return abs(self.limelight.getNumber("tx", 0.0)) < 1.0  
+        target_valid = self.limelight.getNumber("tv", 0)
+        return target_valid and abs(self.limelight.getNumber("tx", 0.0)) < 1.0  
     
     def end(self, interrupted):
         self.drive.drive(0, 0, 0)  
-

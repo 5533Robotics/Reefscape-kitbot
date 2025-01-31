@@ -25,4 +25,4 @@ class DriveForTime(commands2.Command):
         return self.timer.get() >= self.time
     
     def end(self, interrupted):
-        self.drive.drive(0, 0, 0)
+        self.drive.drive(0, 0, 0.015)
