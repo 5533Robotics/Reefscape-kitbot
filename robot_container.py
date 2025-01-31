@@ -1,11 +1,12 @@
+from commands2 import cmd
 import commands2
 import ntcore
 import wpilib
+from auton.AlignToAprilTag import AlignToAprilTag
 from auton.DriveCommand import DriveForTime
 from auton.MingusCommand import RunMingusqxForTime
 from subsystems.command_MecanumDrive import MecanumDrive
 from subsystems.command_Mingusqx import Mingusqx
-from subsystems.vision import Vision
 
 
 class RobotContainer:
@@ -31,31 +32,26 @@ class RobotContainer:
 
         self.configureButtonBindings()
 
-    def vision(self):
-        vision = Vision(self.robot_drive)
-        a = self.joystick.button(3).getAsBoolean()
-        tx = self.limelight.getNumber("tx", 1)
-        kP = 0.5
-        z = (
-            self.joystick.getZ() / 2
-            if not a
-            else tx / 27
-        )
-        return self.robot_drive.drive(
-            self.joystick.getX(),
-            self.joystick.getY(),
-            z,
-        )
-
     def configureButtonBindings(self) -> None:
         self.robot_drive.setDefaultCommand(
-            self.robot_drive.apply_request(lambda: self.vision())
+            self.robot_drive.apply_request(lambda: self.robot_drive.drive(
+            self.joystick.getX(),
+            self.joystick.getY(),
+            self.joystick.getZ() / 2,
+        ))
         )
 
-        self.joystick.button(0).whileTrue(self.minugusqx.mingussy(85))
+        
+
+        self.joystick.button(1).whileTrue(
+    cmd.runEnd(lambda: self.minugusqx.run(85), lambda: self.minugusqx.run(0), self.minugusqx)
+)
+
+        self.joystick.button(4).whileTrue(AlignToAprilTag(self.robot_drive, self.limelight))
 
     def getAutonomousCommand(self) -> commands2.Command:
+
         return commands2.SequentialCommandGroup(
-            DriveForTime(self.robot_drive, 40, 0, 0, 5),
+            DriveForTime(self.robot_drive, 0, -40, 0, 1.75),
             RunMingusqxForTime(self.minugusqx, 80, 3)
         )

@@ -1,8 +1,10 @@
 import commands2
 import wpilib
 
+from subsystems.command_MecanumDrive import MecanumDrive
+
 class DriveForTime(commands2.Command):
-    def __init__(self, drive, x_speed, y_speed, z_rotation, time_seconds):
+    def __init__(self, drive: MecanumDrive, x_speed: int, y_speed: int, z_rotation: int, time_seconds: int):
         super().__init__()
         self.drive = drive
         self.x_speed = x_speed / 100
@@ -10,7 +12,7 @@ class DriveForTime(commands2.Command):
         self.z_rotation = z_rotation / 100
         self.timer = wpilib.Timer()
         self.time = time_seconds 
-        self.addRequirements([drive])
+        self.addRequirements(drive)
     
     def initialize(self):
         self.timer.reset()
