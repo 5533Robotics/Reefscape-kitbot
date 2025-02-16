@@ -1,15 +1,19 @@
 from commands2 import cmd
 import commands2
+import commands2.util
 import ntcore
 import wpilib
 from auton.AlignToAprilTag import AlignToAprilTag
-from auton.DriveCommand import DriveForTime
+from auton.auton_parse import AutonParser
+from auton.auton_tokenize import AutonTokenizer
+from auton.auton_translation import AutonCommand
 from subsystems.command_MecanumDrive import MecanumDrive
 from subsystems.command_Mingusqx import Mingusqx
 
-
 class RobotContainer:
     def __init__(self) -> None:
+        self.speed = 85
+        self.taker = wpilib.DigitalInput(0)
         self.front_left = wpilib.Spark(3)
         self.rear_left = wpilib.Spark(2)
         self.front_right = wpilib.Spark(1)
@@ -29,9 +33,13 @@ class RobotContainer:
 
         self.joystick = commands2.button.CommandJoystick(0)
 
+
+
         self.configureButtonBindings()
 
     def configureButtonBindings(self) -> None:
+
+        print(f"{self.taker.get()}")
         self.robot_drive.setDefaultCommand(
             self.robot_drive.apply_request(
                 lambda: self.robot_drive.drive(
@@ -44,8 +52,16 @@ class RobotContainer:
 
         self.joystick.button(1).whileTrue(
             cmd.runEnd(
-                lambda: self.mingusqx.run(85),
+                lambda: self.mingusqx.run(self.speed),
                 lambda: self.mingusqx.run(0),
+                self.mingusqx,
+            )
+        )
+
+        self.joystick.button(3).whileTrue(
+            cmd.runEnd(
+                lambda: self.speed,
+                lambda: setattr(self, "speed", self.speed - 5),
                 self.mingusqx,
             )
         )
@@ -54,11 +70,23 @@ class RobotContainer:
             AlignToAprilTag(self.robot_drive, self.limelight)
         )
 
-    def getAutonomousCommand(self) -> commands2.Command:
-        return commands2.SequentialCommandGroup(
-        DriveForTime(self.robot_drive, 0, -40, 0, 1.90),
-        cmd.runOnce(lambda: self.mingusqx.run(60), self.mingusqx),
-        commands2.WaitCommand(1),
-        cmd.runOnce(lambda: self.mingusqx.run(0), self.mingusqx),
-    )
+        self.joystick.button(5).whileTrue(
+            cmd.runEnd(
+                lambda: self.speed,
+                lambda: setattr(self, "speed", self.speed + 5),
+                self.mingusqx,
+            )
+        )
 
+        
+
+    def getAutonomousCommand(self) -> commands2.Command:
+
+        file = open(wpilib.getOperatingDirectory() + "/autons/two_piece.txt", "r")
+        content = file.read()
+        tokenizer = AutonTokenizer(content)
+        parser = AutonParser(tokenizer._tokenize())
+        auton = parser.parse()
+        commands = (AutonCommand(self.robot_drive, self.mingusqx, auton)).parse()
+        file.close()
+        return commands2.SequentialCommandGroup(*commands)

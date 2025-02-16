@@ -10,6 +10,7 @@ class MecanumDrive(Subsystem):
         self.front_right = front_right
         self.rear_right = rear_right
 
+
     def apply_request(
         self, request
     ) -> Command:
